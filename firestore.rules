@@ -1,0 +1,47 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Defect list UT Gedung CLS NDP Batam.
+    // Hanya halaman tracker (yang sudah login anonim) yang boleh membaca/menulis,
+    // dan setiap item wajib berbentuk sesuai format tracker.
+    match /items/{itemId} {
+      function validItem() {
+        let d = request.resource.data;
+        return d.keys().hasOnly(['no','item','detail','pic','picKarsa','status','mulai','selesai','ket',
+                                 'fotoOpen','fotoClosed','dibuat','diubahOleh','diubahPada'])
+          && d.no is int && d.no > 0 && d.no < 10000
+          && d.item is string && d.item.size() > 0 && d.item.size() <= 500
+          && d.status in ['Open', 'In Progress', 'Closed']
+          && (!('detail' in d) || (d.detail is string && d.detail.size() <= 500))
+          && (!('pic' in d) || (d.pic is string && d.pic.size() <= 100))
+          && (!('picKarsa' in d) || (d.picKarsa is string && d.picKarsa.size() <= 100))
+          && (!('ket' in d) || (d.ket is string && d.ket.size() <= 1000))
+          && (!('mulai' in d) || (d.mulai is string && d.mulai.size() <= 10))
+          && (!('selesai' in d) || (d.selesai is string && d.selesai.size() <= 10))
+          && (!('fotoOpen' in d) || (d.fotoOpen is list && d.fotoOpen.size() <= 4))
+          && (!('fotoClosed' in d) || (d.fotoClosed is list && d.fotoClosed.size() <= 4));
+      }
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null && validItem();
+      allow delete: if request.auth != null;
+    }
+
+    // Foto dokumentasi (Open / Closed), satu dokumen per foto, sudah dikompres di browser.
+    match /photos/{photoId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['itemId','tahap','data','oleh','dibuat'])
+        && request.resource.data.itemId is string && request.resource.data.itemId.size() <= 100
+        && request.resource.data.tahap in ['open', 'closed']
+        && request.resource.data.data is string
+        && request.resource.data.data.matches('^data:image/jpeg;base64,.*')
+        && request.resource.data.data.size() <= 900000;
+      allow delete: if request.auth != null;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
