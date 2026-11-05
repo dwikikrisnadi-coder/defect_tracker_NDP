@@ -85,10 +85,14 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .dok img{width:36px;height:36px;object-fit:cover;border-radius:4px;border:1px solid var(--line);cursor:pointer;display:block;background:var(--surface-2)}
 .dok button.th{all:unset;cursor:pointer;border-radius:4px}
 .dok button.th:focus-visible{outline:2px solid var(--teal)}
-.dok label.add{width:34px;height:34px;border:1.5px dashed var(--teal);border-radius:4px;display:grid;place-items:center;color:var(--teal);font-size:20px;font-weight:600;cursor:pointer;background:var(--surface)}
-.dok label.add:hover{background:var(--surface-2)}
-.dok label.add.busy{border-style:solid;font-size:11px;animation:none}
-.dok input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.dok .add{font:inherit;padding:0;width:34px;height:34px;border:1.5px dashed var(--teal);border-radius:4px;display:grid;place-items:center;color:var(--teal);font-size:20px;font-weight:600;cursor:pointer;background:var(--surface)}
+.dok .add:hover{background:var(--surface-2)}
+.dok .add.busy{border-style:solid;font-size:11px;animation:none}
+.vh{position:absolute!important;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0 0 0 0)}
+.sheet .card{gap:10px}
+.sheet .card .btn{display:block;text-align:center;padding:13px 14px;font-size:16px}
+.sheet .card p{margin:0;color:var(--muted);font-size:14px}
+@media (max-width:700px){.modal.sheet{place-items:end center;padding:0}.modal.sheet .card{width:100%;border-radius:14px 14px 0 0;padding-bottom:calc(20px + env(safe-area-inset-bottom,0px))}}
 th.dk{min-width:124px}
 .viewer{position:fixed;inset:0;background:rgba(3,12,17,.88);display:grid;grid-template-rows:auto 1fr auto;z-index:25;padding:calc(10px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));color:#fff;gap:10px}
 .viewer .vt{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
@@ -131,7 +135,21 @@ img{max-width:100%}
 .setup{background:var(--prog-bg);border:1px solid var(--prog);border-radius:8px;padding:14px 16px;color:var(--fg)}
 .setup b{color:var(--prog)}
 .meta{font-size:12px;color:var(--muted)}
-@media (max-width:700px){.listbar .toolbar{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}.listbar .toolbar>*{flex:0 0 auto}.listbar .toolbar .grow{flex:0 0 180px}header.top{flex-wrap:nowrap}.logo{padding:3px 5px}.logo img{height:34px}.ttl{text-align:right}.ttl p{display:none}.ttl h1{font-size:18px}.sync{font-size:11px}.who label{display:none}.who input{width:110px;padding:3px 6px;font-size:13px}.lbhead span{display:none}}
+@media (max-width:700px){header.top{flex-wrap:nowrap}.logo{padding:3px 5px}.logo img{height:34px}.ttl{text-align:right}.ttl p{display:none}.ttl h1{font-size:18px}.sync{font-size:11px}.who label{display:none}.who input{width:110px;padding:3px 6px;font-size:13px}.lbhead span{display:none}}
+#filterToggle{display:none;align-items:center;gap:6px}
+#filterToggle .bd{background:var(--teal);color:#fff;border-radius:9px;font-size:11px;min-width:18px;height:18px;display:inline-grid;place-items:center;padding:0 5px}
+@media (max-width:700px){
+  .listbar .toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center}
+  .listbar .toolbar .grow{grid-column:1;grid-row:1;width:100%;min-width:0}
+  #filterToggle{display:inline-flex;grid-column:2;grid-row:1;padding:8px 10px}
+  #pdfBtn{grid-column:3;grid-row:1;padding:8px 10px}
+  .listbar .toolbar .seg,#picF,#pkF,#addBtn{display:none}
+  .listbar.open .seg{display:flex;flex-wrap:wrap;grid-column:1/-1}
+  .listbar.open .seg button{flex:1 1 30%;padding:8px 4px;font-size:13px;border-bottom:1px solid var(--line)}
+  .listbar.open #picF,.listbar.open #pkF{display:block;grid-column:1/-1;width:100%}
+  .listbar.open #addBtn{display:block;grid-column:1/-1}
+  .listbar{max-height:calc(100vh - var(--hdrH,0px) - 40px);overflow-y:auto}
+}
 </style>
 </head>
 <body>
@@ -178,6 +196,7 @@ img{max-width:100%}
       <select id="picF" aria-label="Saring PIC"><option value="">Semua PIC</option></select>
       <select id="pkF" aria-label="Saring PIC Karsa"><option value="">Semua PIC Karsa</option></select>
       <button class="btn" id="addBtn">+ Tambah item</button>
+      <button class="btn" id="filterToggle" type="button" aria-expanded="false" aria-controls="listbar">Filter <span class="bd" id="fCount" hidden></span></button>
       <button class="btn pri" id="pdfBtn">Export PDF</button>
     </div>
     </div>
@@ -197,6 +216,17 @@ img{max-width:100%}
 
 <datalist id="picList"></datalist>
 <datalist id="pkList"></datalist>
+<div class="modal sheet" id="psheet" hidden role="dialog" aria-modal="true" aria-labelledby="psTitle">
+  <div class="card">
+    <h3 id="psTitle">Tambah foto</h3>
+    <p id="psSub"></p>
+    <label class="btn pri" for="camIn">Ambil foto dari kamera</label>
+    <label class="btn" for="galIn">Pilih dari galeri</label>
+    <button class="btn" id="psCancel" type="button">Batal</button>
+    <input class="vh" type="file" id="camIn" accept="image/*" capture="environment" tabindex="-1">
+    <input class="vh" type="file" id="galIn" accept="image/*" multiple tabindex="-1">
+  </div>
+</div>
 <div class="viewer" id="viewer" hidden role="dialog" aria-modal="true" aria-label="Dokumentasi foto">
   <div class="vt"><div><b id="vTitle"></b><br><span id="vMeta"></span></div><button class="btn" id="vClose" type="button">Tutup</button></div>
   <div class="stage"><img id="vImg" alt="" hidden><div class="ld" id="vLoad">Memuat foto…</div></div>
@@ -360,15 +390,28 @@ function dokCell(it,tahap){
     const im=document.createElement('img');im.src=f.t;im.alt='Dokumentasi '+tahap+' item '+it.no+' foto '+(i+1);im.loading='lazy';b.append(im);
     b.onclick=()=>openViewer(it.id,key,i); w.append(b)});
   if(arr.length<MAXF&&!readOnly){
-    const id='up-'+tahap+'-'+it.id; const inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.multiple=true;inp.id=id;
-    const lb=document.createElement('label');lb.className='add';lb.htmlFor=id;lb.title='Tambah foto '+(tahap==='open'?'kondisi Open':'setelah Closed');lb.textContent=uploading.has(id)?'…':'+';
-    if(uploading.has(id))lb.classList.add('busy');
-    inp.onchange=()=>{const fs=[...inp.files];inp.value='';if(fs.length)addPhotos(it.id,tahap,fs,id)};
-    w.append(inp,lb);
+    const id='up-'+tahap+'-'+it.id;
+    const lb=document.createElement('button');lb.type='button';lb.className='add';lb.title='Tambah foto '+(tahap==='open'?'kondisi Open':'setelah Closed');lb.setAttribute('aria-label',lb.title+' item '+it.no);lb.textContent=uploading.has(id)?'…':'+';
+    if(uploading.has(id)){lb.classList.add('busy');lb.disabled=true}
+    lb.onclick=()=>openSheet(it.id,tahap,id);
+    w.append(lb);
   }
   td.append(w); return td;
 }
 const uploading=new Set();
+const PS={itemId:null,tahap:'',slot:''};
+function openSheet(itemId,tahap,slot){
+  const it=items.find(i=>i.id===itemId); if(!it)return;
+  PS.itemId=itemId;PS.tahap=tahap;PS.slot=slot;
+  const left=MAXF-((it[tahap==='open'?'fotoOpen':'fotoClosed'])||[]).length;
+  $('#psTitle').textContent='Foto '+(tahap==='open'?'Dokumentasi Open':'Dokumentasi Closed');
+  $('#psSub').textContent='No. '+it.no+' · '+it.item+' — sisa '+left+' foto';
+  $('#psheet').hidden=false;
+}
+const closeSheet=()=>{$('#psheet').hidden=true};
+$('#psCancel').onclick=closeSheet;
+$('#psheet').addEventListener('click',e=>{if(e.target.id==='psheet')closeSheet()});
+for(const id of ['camIn','galIn']){const inp=$('#'+id);inp.addEventListener('change',()=>{const fs=[...inp.files];inp.value='';closeSheet();if(fs.length&&PS.itemId)addPhotos(PS.itemId,PS.tahap,fs,PS.slot)})}
 function loadImg(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src})}
 async function compress(file,max,q){
   const url=URL.createObjectURL(file);
@@ -443,7 +486,7 @@ function statusPatch(it,v){
 function render(){
   const a=document.activeElement;
   if(a&&$('#rows').contains(a)&&a.matches('input')){pendingRender=true;return}
-  pendingRender=false; renderStats(); renderRecap(); renderRows();
+  pendingRender=false; renderStats(); renderRecap(); renderRows(); if(typeof updFCount==='function')updFCount();
 }
 document.addEventListener('focusout',()=>setTimeout(()=>{if(pendingRender)render()},0));
 
@@ -469,7 +512,7 @@ function openModal(id){
 const closeModal=()=>{$('#modal').hidden=true;editId=null};
 $('#cancelBtn').onclick=closeModal;
 $('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal()});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#modal').hidden)closeModal()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#modal').hidden)closeModal();if(e.key==='Escape'&&!$('#psheet').hidden)closeSheet()});
 $('#form').addEventListener('submit',async e=>{
   e.preventDefault(); if(!db||readOnly)return;
   const status=$('#fStatus').value; let mulai=$('#fMulai').value, selesai=$('#fSelesai').value;
@@ -569,6 +612,12 @@ async function exportPdf(){
   doc.save('Defect_List_UT_CLS_NDP_'+today()+'.pdf'); toast('PDF diunduh.');
 }
 $('#pdfBtn').onclick=exportPdf;
+const fT=$('#filterToggle');
+fT.onclick=()=>{const o=$('#listbar').classList.toggle('open');fT.setAttribute('aria-expanded',String(o));fT.firstChild.textContent=o?'Tutup ':'Filter '};
+function updFCount(){const n=(F.st!=='all')+(!!F.pic)+(!!F.pk);const b=$('#fCount');b.textContent=n;b.hidden=!n}
+const mqPhone=matchMedia('(max-width:700px)');
+const setPdfLabel=()=>{$('#pdfBtn').textContent=mqPhone.matches?'PDF':'Export PDF'};
+setPdfLabel(); mqPhone.addEventListener?mqPhone.addEventListener('change',setPdfLabel):mqPhone.addListener(setPdfLabel);
 
 render();
 
