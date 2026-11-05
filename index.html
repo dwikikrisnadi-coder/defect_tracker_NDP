@@ -131,15 +131,15 @@ img{max-width:100%}
 #filterToggle{display:none;align-items:center;gap:6px}
 #filterToggle .bd{background:var(--teal);color:#fff;border-radius:9px;font-size:11px;min-width:18px;height:18px;display:inline-grid;place-items:center;padding:0 5px}
 @media (max-width:700px){
-  .listbar .toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center}
+  .listbar .toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:6px;align-items:center}
   .listbar .toolbar .grow{grid-column:1;grid-row:1;width:100%;min-width:0}
   #filterToggle{display:inline-flex;grid-column:2;grid-row:1;padding:8px 10px}
-  #pdfBtn{grid-column:3;grid-row:1;padding:8px 10px}
-  .listbar .toolbar .seg,#picF,#pkF,#addBtn{display:none}
+  #addBtn{display:inline-flex;grid-column:3;grid-row:1;padding:8px 11px}
+  #pdfBtn{grid-column:4;grid-row:1;padding:8px 10px}
+  .listbar .toolbar .seg,#picF,#pkF{display:none}
   .listbar.open .seg{display:flex;flex-wrap:wrap;grid-column:1/-1}
   .listbar.open .seg button{flex:1 1 30%;padding:8px 4px;font-size:13px;border-bottom:1px solid var(--line)}
   .listbar.open #picF,.listbar.open #pkF{display:block;grid-column:1/-1;width:100%}
-  .listbar.open #addBtn{display:block;grid-column:1/-1}
   .listbar{max-height:calc(100vh - var(--hdrH,0px) - 40px);overflow-y:auto}
 }
 
@@ -667,7 +667,7 @@ const fT=$('#filterToggle');
 fT.onclick=()=>{const o=$('#listbar').classList.toggle('open');fT.setAttribute('aria-expanded',String(o));fT.firstChild.textContent=o?'Tutup ':'Filter '};
 function updFCount(){const n=(F.st!=='all')+(!!F.pic)+(!!F.pk);const b=$('#fCount');b.textContent=n;b.hidden=!n}
 const mqPhone=matchMedia('(max-width:700px)');
-const setPdfLabel=()=>{$('#pdfBtn').textContent=mqPhone.matches?'PDF':'Export PDF'};
+const setPdfLabel=()=>{$('#pdfBtn').textContent=mqPhone.matches?'PDF':'Export PDF';$('#addBtn').textContent=mqPhone.matches?'+ Item':'+ Tambah item';$('#addBtn').setAttribute('aria-label','Tambah item')};
 setPdfLabel(); mqPhone.addEventListener?mqPhone.addEventListener('change',setPdfLabel):mqPhone.addListener(setPdfLabel);
 
 render();
