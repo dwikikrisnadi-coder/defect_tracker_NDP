@@ -732,8 +732,17 @@ async function exportPdf(){
   const list=filtered(); if(!list.length){toast('Tidak ada item untuk diekspor.');return}
   const {jsPDF}=window.jspdf; const doc=new jsPDF({unit:'mm',format:'a4',orientation:'landscape'});
   const W=297, M=12, FY=203; const byNo=new Map(list.map(i=>[i.no,i]));
-  toast('Menyiapkan PDF…');
-  const dims=new Map(); await Promise.all(list.flatMap(i=>[...(i.fotoOpen||[]),...(i.fotoClosed||[])]).map(f=>loadImg(f.t).then(im=>dims.set(f.t,[im.naturalWidth,im.naturalHeight])).catch(()=>{})));
+  const btn=$('#pdfBtn'); if(btn.disabled)return; btn.disabled=true;
+  // ambil foto resolusi penuh (1 foto pertama per tahap) lalu perkecil ke ±720px agar PDF tetap ringan
+  const want=[]; for(const i of list)for(const k of ['fotoOpen','fotoClosed']){const f=(i[k]||[])[0];if(f)want.push(f)}
+  const big=new Map(); let got=0;
+  const shrink=async src=>{const im=await loadImg(src);const sc=Math.min(1,720/Math.max(im.naturalWidth,im.naturalHeight));const c=document.createElement('canvas');c.width=Math.round(im.naturalWidth*sc);c.height=Math.round(im.naturalHeight*sc);const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);return {src:c.toDataURL('image/jpeg',.78),w:c.width,h:c.height}};
+  const one=async f=>{try{let ph=photoCache.get(f.id);if(!ph&&db){const sn=await db.doc('photos/'+f.id).get();ph=sn.exists?sn.data():null;if(ph)photoCache.set(f.id,ph)}big.set(f.id,await shrink(ph?ph.data:f.t))}catch{try{big.set(f.id,await shrink(f.t))}catch{}}got++;if(got%20===0||got===want.length)toast('Menyiapkan foto '+got+' / '+want.length+'…')};
+  toast('Menyiapkan foto 0 / '+want.length+'…');
+  try{const q=want.slice();await Promise.all(Array.from({length:6},async()=>{while(q.length)await one(q.shift())}))}
+  catch{}
+  toast('Menyusun PDF…'); await new Promise(r=>setTimeout(r,30));
+  try{
   doc.addImage(LOGO,'JPEG',M,8,80,80*297/1000);
   doc.setFont('helvetica','bold');doc.setFontSize(17);doc.setTextColor(...RGB.navy);doc.text('DEFECT LIST',W-M,15,{align:'right'});
   doc.setFontSize(9.5);doc.setTextColor(...RGB.teal);doc.text('HASIL UJI TERIMA (UT) GEDUNG CLS NDP',W-M,21,{align:'right'});
@@ -767,29 +776,49 @@ async function exportPdf(){
       if(a!==gL){gL=a;gR=null;pdfRows.push([{content:(a||'(Tanpa lantai)').toUpperCase()+'   ('+cnt(byLt.get(a))+')',colSpan:10,styles:{fillColor:RGB.navy,textColor:255,fontStyle:'bold',fontSize:9}}]);meta.push(null)}
       if(r!==gR){gR=r;pdfRows.push([{content:(r||'(Tanpa ruang)')+'   ('+cnt(byRu.get(a+'|'+r))+')',colSpan:10,styles:{fillColor:[226,240,242],textColor:RGB.navy,fontStyle:'bold',fontSize:8.2}}]);meta.push(null)}
       pdfRows.push([i.no,i.item+(i.detail?' '+i.detail:'')+(i.kode?'\n#'+i.kode:''),i.pic||'',i.picKarsa||'',i.status,fmt(i.mulai),fmt(i.selesai),'','',i.ket||'']);meta.push(i)}}
-  doc.autoTable({startY:doc.lastAutoTable.finalY+14,margin:{left:M,right:M,bottom:12},theme:'grid',rowPageBreak:'avoid',
+  const Y0=doc.lastAutoTable.finalY+14, PH=210, BOT=12;
+  const listOpts=(D,rows,mt,rec)=>({startY:Y0,margin:{left:M,right:M,bottom:BOT},theme:'grid',rowPageBreak:'avoid',
     head:[['No','Uraian Defect','PIC','PIC Karsa','Status','Mulai','Selesai','Dok. Open','Dok. Closed','Keterangan']],
-    body:pdfRows,
+    body:rows,
     styles:{fontSize:7.6,cellPadding:1.6,lineColor:RGB.grid,lineWidth:0.2,textColor:20,valign:'middle'},
     headStyles:{fillColor:RGB.navy,textColor:255,halign:'center'},
-    columnStyles:{0:{halign:'center',cellWidth:9},2:{cellWidth:26,fontStyle:'bold'},3:{cellWidth:21},4:{halign:'center',cellWidth:17,fontStyle:'bold'},5:{halign:'center',cellWidth:18},6:{halign:'center',cellWidth:18},7:{cellWidth:30},8:{cellWidth:30},9:{cellWidth:42}},
+    columnStyles:{0:{halign:'center',cellWidth:9},2:{cellWidth:22,fontStyle:'bold'},3:{cellWidth:18},4:{halign:'center',cellWidth:16,fontStyle:'bold'},5:{halign:'center',cellWidth:16},6:{halign:'center',cellWidth:16},7:{cellWidth:46},8:{cellWidth:46},9:{cellWidth:30}},
     didParseCell:d=>{
-      if(d.section!=='body')return; const it=meta[d.row.index]; if(!it)return; const k=kind(it.pic);
-      if((d.column.index===7||d.column.index===8)&&(it[d.column.index===7?'fotoOpen':'fotoClosed']||[]).length)d.cell.styles.minCellHeight=14.5;
+      if(d.section!=='body')return; const it=mt[d.row.index]; if(!it)return; const k=kind(it.pic);
+      if((d.column.index===7||d.column.index===8)&&(it[d.column.index===7?'fotoOpen':'fotoClosed']||[]).length)d.cell.styles.minCellHeight=35.5;
       if(k){d.cell.styles.fillColor=k==='gsd'?RGB.red:RGB.orange;d.cell.styles.textColor=255;return}
       if(d.column.index===4)d.cell.styles.textColor=it.status==='Closed'?RGB.done:it.status==='In Progress'?RGB.prog:RGB.open;
     },
     didDrawCell:d=>{
+      if(rec){if(d.section==='body'&&d.column.index===0)rec[d.row.index]={page:D.internal.getCurrentPageInfo().pageNumber,y:d.cell.y,h:d.cell.height};return}
       if(d.section!=='body'||(d.column.index!==7&&d.column.index!==8))return;
-      const R=meta[d.row.index]||(d.row.raw&&typeof d.row.raw[0]==='number'&&byNo.get(d.row.raw[0])); if(!R)return; const arr=(R[d.column.index===7?'fotoOpen':'fotoClosed'])||[]; if(!arr.length)return;
-      const S=11.5, gap=1.2; let x=d.cell.x+1.2; const y=d.cell.y+(d.cell.height-S)/2;
-      arr.slice(0,2).forEach(f=>{const wh=dims.get(f.t)||[1,1];const r=Math.min(S/wh[0],S/wh[1]);const w=wh[0]*r,h=wh[1]*r;
-        try{doc.addImage(f.t,'JPEG',x+(S-w)/2,y+(S-h)/2,w,h,f.id,'FAST')}catch{} x+=S+gap});
-      if(arr.length>2){doc.setFontSize(7);doc.setTextColor(60);doc.setTextColor(kind(R.pic)?255:60);doc.text('+'+(arr.length-2),x+0.3,y+S/2+1)}
+      const R=mt[d.row.index]; if(!R)return; const arr=(R[d.column.index===7?'fotoOpen':'fotoClosed'])||[]; if(!arr.length)return;
+      const BW=d.cell.width-2.4, BH=Math.min(d.cell.height-2.4,33); const f=arr[0]; const b=big.get(f.id); if(!b)return;
+      const r=Math.min(BW/b.w,BH/b.h), w=b.w*r, h=b.h*r; const x=d.cell.x+(d.cell.width-w)/2, y=d.cell.y+(d.cell.height-h)/2;
+      try{D.addImage(b.src,'JPEG',x,y,w,h,'pf_'+f.id,'MEDIUM')}catch{}
+      if(arr.length>1){const lbl='+'+(arr.length-1)+' foto';D.setFontSize(6.5);const tw=D.getTextWidth(lbl)+2.4;D.setFillColor(16,48,61);D.rect(x+w-tw,y+h-4,tw,4,'F');D.setTextColor(255);D.text(lbl,x+w-tw+1.2,y+h-1.1)}
     },
-    didDrawPage:()=>{doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(...RGB.grey);
-      doc.text('Defect List Hasil UT Gedung CLS NDP Batam - PT. Karsa Prabala',M,FY);doc.text('Hal. '+doc.internal.getNumberOfPages(),W-M,FY,{align:'right'})}});
+    didDrawPage:()=>{D.setFont('helvetica','normal');D.setFontSize(7);D.setTextColor(...RGB.grey);
+      D.text('Defect List Hasil UT Gedung CLS NDP Batam - PT. Karsa Prabala',M,FY);D.text('Hal. '+D.internal.getNumberOfPages(),W-M,FY,{align:'right'})}});
+  // judul lantai/ruang jangan tertinggal sendirian di bawah halaman: uji tata letak tanpa foto, lalu sisipkan pengisi
+  let rows=pdfRows.slice(), mt=meta.slice();
+  for(let pass=0;pass<400;pass++){
+    const D=new jsPDF({unit:'mm',format:'a4',orientation:'landscape'}); const rec=[];
+    D.autoTable(listOpts(D,rows,mt,rec));
+    let fix=-1;
+    for(let k=0;k<rows.length;k++){
+      if(mt[k]||!rec[k]||rows[k].spacer)continue;
+      let n=k+1; while(n<rows.length&&!mt[n])n++;
+      if(n<rows.length&&rec[n]&&rec[n].page!==rec[k].page&&!(k>0&&!mt[k-1]&&!rows[k-1].spacer&&rec[k-1]&&rec[k-1].page===rec[k].page)){fix=k;break}
+    }
+    if(fix<0)break;
+    const gap=PH-BOT-rec[fix].y-0.6; const sp=[{content:'',colSpan:10,styles:{minCellHeight:Math.max(gap,0.5),lineWidth:0,fillColor:false,cellPadding:0}}]; sp.spacer=true;
+    rows.splice(fix,0,sp); mt.splice(fix,0,null);
+  }
+  doc.autoTable(listOpts(doc,rows,mt,null));
   doc.save('Defect_List_UT_CLS_NDP_'+today()+'.pdf'); toast('PDF diunduh.');
+  }catch(e){toast('PDF gagal dibuat. Coba saring per lantai agar lebih ringan.')}
+  finally{btn.disabled=false}
 }
 $('#pdfBtn').onclick=exportPdf;
 const fT=$('#filterToggle');
