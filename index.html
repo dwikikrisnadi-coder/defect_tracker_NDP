@@ -194,13 +194,34 @@ tr.other td{background:var(--other-bg)} tr.other td:first-child{box-shadow:inset
 .toast{border-radius:999px;background:var(--fg);color:#F0F2F6;font-weight:600}
 #filterToggle .bd{background:var(--teal)}
 @media (min-width:701px){.listbar .toolbar{flex-wrap:nowrap}.listbar .toolbar .grow{flex:1 1 150px;min-width:130px}#picF,#pkF{flex:0 1 190px;min-width:110px;width:auto}.listbar .seg{flex:0 0 auto}.seg button{padding:6px 11px}.listbar .toolbar .btn{flex:0 0 auto;white-space:nowrap}}
-@media (min-width:701px) and (max-width:1310px){.listbar .toolbar{flex-wrap:wrap}}
+@media (min-width:701px) and (max-width:1520px){.listbar .toolbar{flex-wrap:wrap}}
 @media (max-width:700px){.seg{border-radius:16px}.listbar.open .seg button{border-bottom:0}.stat b{font-size:28px}
   #picF,#pkF{max-width:none}
   .stats{grid-template-columns:repeat(6,minmax(0,1fr))}
   .stats .stat{grid-column:span 2;padding:12px}
   .stats .stat[data-f="all"],.stats .stat[data-f="out"]{grid-column:span 3}
   .stats .stat span{font-size:10.5px;letter-spacing:.05em}}
+.recaps{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+@media (max-width:980px){.recaps{grid-template-columns:1fr}}
+.recap .prog{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.recap .prog .bar{width:70px;margin:0}
+.ur .loc{display:block;font-size:12px;color:var(--muted);margin-top:2px;font-weight:500}
+.pager{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;color:var(--muted);font-size:13px}
+.admin{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:6px}
+.impinfo{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13.5px}
+.chk{display:flex;gap:8px;align-items:flex-start;font-size:13.5px}
+.chk input{accent-color:var(--teal);width:16px;height:16px;margin-top:2px}
+#impProg .bar{height:8px}
+#ltF{flex:0 1 150px;min-width:110px;width:auto}
+#ruF{flex:0 1 200px;min-width:120px;width:auto}
+tr.grp td{background:var(--surface-2);padding:9px 12px;border-top:1.5px solid var(--line-strong)}
+tr.grp.l td{background:var(--fg);color:#F0F2F6;font-family:var(--f-display);font-weight:800;font-size:15px;letter-spacing:-.01em}
+tr.grp.r td{font-weight:700;color:var(--fg)}
+tr.grp .gc{font-weight:600;color:var(--muted);font-size:12.5px;margin-left:10px;font-family:var(--f-body)}
+tr.grp.l .gc{color:#B4E8E3}
+tr.grp td button{all:unset;cursor:pointer} tr.grp td button:focus-visible{outline:2px solid var(--teal)}
+.recap tr.back td{color:var(--accent);font-weight:700}
+@media (max-width:700px){#ltF,#ruF{display:none}.listbar.open #ltF,.listbar.open #ruF{display:block;grid-column:1/-1;width:100%}}
 </style>
 </head>
 <body>
@@ -225,6 +246,17 @@ tr.other td{background:var(--other-bg)} tr.other td:first-child{box-shadow:inset
     <button class="stat c" data-f="Closed"><span>Closed</span><b id="sDone">–</b><div class="bar"><i id="sBar" style="width:0"></i></div></button>
   </section>
 
+  <div class="recaps">
+  <section class="sec">
+    <h2 id="recapLTitle">Rekap per Lantai</h2>
+    <div class="scroll">
+      <table class="recap">
+        <thead><tr><th id="recapLHead">Lantai / Area</th><th class="num">Total</th><th class="num">Open</th><th class="num">In Progress</th><th class="num">Closed</th><th class="num">Progres</th></tr></thead>
+        <tbody id="recapL"><tr><td colspan="6" class="empty">Rekap muncul setelah data dimuat.</td></tr></tbody>
+      </table>
+    </div>
+    <div class="note" id="recapLNote">Klik baris lantai untuk melihat rekap per ruang dan menyaring daftar.</div>
+  </section>
   <section class="sec">
     <h2>Rekap per PIC</h2>
     <div class="scroll">
@@ -235,12 +267,15 @@ tr.other td{background:var(--other-bg)} tr.other td:first-child{box-shadow:inset
     </div>
     <div class="note">Klik baris PIC untuk menyaring daftar. Item yang dikerjakan dua PIC dihitung di keduanya.</div>
   </section>
+  </div>
 
   <section class="sec">
     <div class="listbar" id="listbar">
     <div class="lbhead"><h2>Daftar Defect</h2><span id="countNote"></span></div>
     <div class="toolbar">
       <input class="grow" id="q" type="search" placeholder="Cari uraian, lokasi, keterangan…" aria-label="Cari">
+      <select id="ltF" aria-label="Saring lantai"><option value="">Semua lantai</option></select>
+      <select id="ruF" aria-label="Saring ruang"><option value="">Semua ruang</option></select>
       <div class="seg" id="seg" role="group" aria-label="Saring status">
         <button data-f="all">Semua</button><button data-f="out">Outstanding</button><button data-f="Open">Open</button><button data-f="In Progress">In Progress</button><button data-f="Closed">Closed</button>
       </div>
@@ -261,11 +296,26 @@ tr.other td{background:var(--other-bg)} tr.other td:first-child{box-shadow:inset
         <tbody id="rows"><tr><td colspan="10" class="empty">Memuat daftar defect dari penyimpanan proyek…</td></tr></tbody>
       </table>
     </div>
+    <div class="pager" id="pager"></div>
     <div class="note">Ubah PIC, status, tanggal, dan keterangan langsung di tabel; tersimpan otomatis. Status "In Progress" mengisi tanggal mulai, "Closed" mengisi tanggal selesai dengan hari ini bila masih kosong. Klik uraian untuk mengedit atau menghapus item.</div>
+    <div class="admin"><button class="btn" id="impBtn" type="button">Impor data dari file…</button><span class="note" id="srcNote"></span></div>
   </section>
 </div>
 
 <datalist id="picList"></datalist>
+<datalist id="ltList"></datalist>
+<datalist id="ruList"></datalist>
+<div class="modal" id="imp" hidden role="dialog" aria-modal="true" aria-labelledby="impTitle">
+  <div class="card">
+    <h3 id="impTitle">Impor data defect</h3>
+    <p class="note">Pilih file impor (.json) yang disiapkan dari laporan defect list. Foto sebelum perbaikan masuk ke Dok. Open, foto sesudah perbaikan ke Dok. Closed.</p>
+    <input type="file" id="impFile" accept=".json,application/json">
+    <div id="impInfo" class="impinfo" hidden></div>
+    <label class="chk"><input type="checkbox" id="impReplace" checked> Hapus data lama (<b id="impOld">0</b> item beserta fotonya) setelah data baru masuk</label>
+    <div id="impProg" hidden><div class="bar"><i id="impBar" style="width:0"></i></div><div id="impMsg" class="note"></div></div>
+    <div class="actions"><span class="sp"></span><button class="btn" id="impCancel" type="button">Tutup</button><button class="btn pri" id="impGo" type="button" disabled>Mulai impor</button></div>
+  </div>
+</div>
 <datalist id="pkList"></datalist>
 <div class="modal sheet" id="psheet" hidden role="dialog" aria-modal="true" aria-labelledby="psTitle">
   <div class="card">
@@ -287,7 +337,11 @@ tr.other td{background:var(--other-bg)} tr.other td:first-child{box-shadow:inset
   <form class="card" id="form" autocomplete="off">
     <h3 id="mTitle">Tambah item</h3>
     <div class="fg"><label for="fItem">Uraian defect</label><input id="fItem" required placeholder="mis. Retak tembok"></div>
-    <div class="fg"><label for="fDetail">Lokasi / detail</label><input id="fDetail" placeholder="mis. (lobby depan sisi kiri)"></div>
+    <div class="row2">
+      <div class="fg"><label for="fLantai">Lantai / area</label><input id="fLantai" list="ltList" placeholder="mis. Lantai 2"></div>
+      <div class="fg"><label for="fRuang">Ruang</label><input id="fRuang" list="ruList" placeholder="mis. G3 Ruang NOC"></div>
+    </div>
+    <div class="fg"><label for="fDetail">Catatan lokasi</label><input id="fDetail" placeholder="mis. (lobby depan sisi kiri)"></div>
     <div class="row2">
       <div class="fg"><label for="fPic">PIC</label><input id="fPic" list="picList" placeholder="Pilih atau ketik"></div>
       <div class="fg"><label for="fStatus">Status</label><select id="fStatus"><option>Open</option><option>In Progress</option><option>Closed</option></select></div>
@@ -315,14 +369,18 @@ tr.other td{background:var(--other-bg)} tr.other td:first-child{box-shadow:inset
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="config.js"></script>
-<script>window.SEED_ITEMS=[{"no": 1, "item": "Perapihan Raised-floor rengang", "detail": "(lt.3-4)", "pic": "GSD", "status": "Open", "mulai": "", "selesai": "", "ket": ""}, {"no": 2, "item": "Hasil test beban raised floor", "detail": "turun 4mm", "pic": "GSD", "status": "Open", "mulai": "", "selesai": "", "ket": ""}, {"no": 3, "item": "Ketinggian Raisefloor", "detail": "ada beda hampir 8mm (di lt.3-4)", "pic": "GSD", "status": "Open", "mulai": "", "selesai": "", "ket": ""}, {"no": 4, "item": "Kaca Jendela", "detail": "(msh banyak belum pakai sealant baik di sisi luar / dalam, Lt.2-3-4)", "pic": "Sidiq", "status": "Open", "mulai": "", "selesai": "", "ket": "Beli Material, Sealent Putih Tulang 1 Dus"}, {"no": 5, "item": "Penguatan tangga kayu arah mezzanine", "detail": "(bisa dibuatkan penguatan ke arah dinding atau dikasih segitiga di bawah tangganya)", "pic": "Harian / Ruli / Tukang Las", "status": "In Progress", "mulai": "2026-11-05", "selesai": "", "ket": ""}, {"no": 6, "item": "Penguatan tangga kayu arah pintu Exit samping", "detail": "(bisa dibuatkan penguatan ke arah dinding atau dikasih segitiga di bawah tangganya)", "pic": "Harian ARS / STR", "status": "In Progress", "mulai": "2026-11-05", "selesai": "", "ket": ""}, {"no": 7, "item": "Tanggul / leveling area toilet dan kamar mandi", "detail": "(lt. semi basement)", "pic": "Harian ARS / STR", "status": "In Progress", "mulai": "2026-11-05", "selesai": "", "ket": ""}, {"no": 8, "item": "Tanggul air", "detail": "janitor room", "pic": "Harian ARS / STR", "status": "In Progress", "mulai": "2026-11-05", "selesai": "", "ket": "Hoer"}, {"no": 9, "item": "Las2an railing tangga tidak rapih", "detail": "(dari Lt. semi basement - lt.3)", "pic": "Sidiq", "status": "Open", "mulai": "", "selesai": "", "ket": "Rizzal kontak org Railing"}, {"no": 10, "item": "Lampu miring dan belum terpasang", "detail": "(di lobby utama)", "pic": "Muh / Abad", "status": "Open", "mulai": "", "selesai": "", "ket": ""}, {"no": 11, "item": "Kolom putus dak tangga", "detail": "lt.3 IT Hall", "pic": "Harian ARS / STR", "status": "Open", "mulai": "", "selesai": "", "ket": "Rizzal pengadaan tim gypsum"}, {"no": 12, "item": "Granit chip", "detail": "(cuil2)", "pic": "Harian ARS / STR", "status": "Open", "mulai": "", "selesai": "", "ket": "Beli keramik"}, {"no": 13, "item": "Kerapihan instalasi pipa kabel lampu", "detail": "", "pic": "Muh / Abad", "status": "Open", "mulai": "", "selesai": "", "ket": ""}, {"no": 14, "item": "Pilar tembok chip", "detail": "(cuil2)", "pic": "Harian ARS / STR", "status": "Open", "mulai": "", "selesai": "", "ket": ""}, {"no": 15, "item": "Sakelar exposed", "detail": "(lobby pintu kaca)", "pic": "Muh / Abad", "status": "Closed", "mulai": "2026-11-05", "selesai": "2026-11-05", "ket": ""}, {"no": 16, "item": "Pipa suling drainase DPT", "detail": "", "pic": "Harian ARS / STR", "status": "Open", "mulai": "", "selesai": "", "ket": "dibobok (tim kaper)"}, {"no": 17, "item": "Retak rambut", "detail": "(R.Trafo)", "pic": "Harian ARS / STR", "status": "Open", "mulai": "", "selesai": "", "ket": "Hoer"}, {"no": 18, "item": "Retak", "detail": "(Rumah tangga to rooftop)", "pic": "Harian ARS / STR", "status": "Open", "mulai": "", "selesai": "", "ket": "Hoer"}, {"no": 19, "item": "Signed K3", "detail": "", "pic": "Arif INT", "status": "Open", "mulai": "", "selesai": "", "ket": ""}, {"no": 20, "item": "Name plate room", "detail": "", "pic": "Arif INT", "status": "Open", "mulai": "", "selesai": "", "ket": ""}, {"no": 21, "item": "Stiker anti slip tangga", "detail": "", "pic": "Arif INT", "status": "Open", "mulai": "", "selesai": "", "ket": ""}, {"no": 22, "item": "Signed APAR", "detail": "", "pic": "Arif INT", "status": "Open", "mulai": "", "selesai": "", "ket": ""}, {"no": 23, "item": "Perapihan kursi toolbox meeting", "detail": "(bantalan kursi lobby, tidak ada)", "pic": "Arif INT", "status": "Open", "mulai": "", "selesai": "", "ket": ""}, {"no": 24, "item": "Perapihan floor drain", "detail": "depan kamar mandi (lt. semi basement)", "pic": "Muh / Abad", "status": "In Progress", "mulai": "2026-11-05", "selesai": "", "ket": "Hoer, butuh FCO Stainless, ke Mitra10"}, {"no": 25, "item": "Penambahan floor drain di kmr mandi", "detail": "(lt.1)", "pic": "Muh / Abad", "status": "Open", "mulai": "", "selesai": "", "ket": "setelah Kunjugan proses"}, {"no": 26, "item": "Perbaiki pencahayaan all", "detail": "(kurang terang)", "pic": "TBC", "status": "Open", "mulai": "", "selesai": "", "ket": "Perlu adanya penambahan titik lampu"}, {"no": 27, "item": "Perbaikan Raise Floor", "detail": "(lt.2-3-4)", "pic": "GSD", "status": "Open", "mulai": "", "selesai": "", "ket": ""}, {"no": 28, "item": "Banyak kotoran / benda tajam / potongan2 benda tajam berserakan mulai ...", "detail": "", "pic": "Harian K3", "status": "In Progress", "mulai": "2026-11-05", "selesai": "", "ket": "Teks asli terpotong di screenshot, perlu dilengkapi"}, {"no": 29, "item": "Perbaikan bawah pipa wastafel & posisi kloset kamar mandi", "detail": "(Lt.1 & Lt. semi basement)", "pic": "Muh / Abad", "status": "Open", "mulai": "", "selesai": "", "ket": ""}, {"no": 30, "item": "Perbaikan kanopi ACP Lobby utama", "detail": "(ada bocor rembes & bolong di ACP serta di talang ACP)", "pic": "Fandi ACP", "status": "Open", "mulai": "2026-11-06", "selesai": "", "ket": "start 11/5"}, {"no": 31, "item": "Perapihan lampu arah semi basement", "detail": "(ada miring posisi & mati lampu tengah)", "pic": "Muh / Abad", "status": "Open", "mulai": "", "selesai": "", "ket": ""}, {"no": 32, "item": "Penambahan list corner sudut tangga", "detail": "(supaya tidak nyangkut saat naik, karena sikunya tajam)", "pic": "TBC", "status": "Open", "mulai": "", "selesai": "", "ket": "Tangga mana yang dimaksud?"}, {"no": 33, "item": "Perbaikan drainase lt. rooftop", "detail": "(masih ada genangan air di dekat pintu rooftop dan pintu rumah lift, floor drain)", "pic": "Muh / Abad", "status": "In Progress", "mulai": "2026-11-05", "selesai": "", "ket": "Butuh Perekat 1 Zak; Plester 2 zak"}, {"no": 34, "item": "Pintu shaf rooftop", "detail": "(tidak ada penyangga pintu di bawahnya)", "pic": "TBC", "status": "Closed", "mulai": "2026-11-05", "selesai": "2026-11-05", "ket": "Penyangga apa yang dimaksud?"}, {"no": 35, "item": "ACP rooftop (Area Timur)", "detail": "(ada yg belum di sealant)", "pic": "Fandi ACP", "status": "Open", "mulai": "2026-11-06", "selesai": "", "ket": ""}, {"no": 36, "item": "Perbaikan bawah Wastafel", "detail": "(belum di aci / di keramik)", "pic": "Harian ARS / STR", "status": "Open", "mulai": "", "selesai": "", "ket": "Meja beton, bagian bawah"}, {"no": 37, "item": "Rooftop", "detail": "(masih ada genangan air di pojok2)", "pic": "Muh / Abad & Harian ARS / STR", "status": "Open", "mulai": "", "selesai": "", "ket": "Sisi barat: pipa drain perlu diturunkan. Sisi utara: perlu ditambah bobokan parapet ke arah gutter-nya"}, {"no": 38, "item": "Retak tembok", "detail": "(sambungan di lobby depan sisi sebelah kiri)", "pic": "Harian ARS / STR", "status": "Open", "mulai": "", "selesai": "", "ket": "Hoer"}, {"no": 39, "item": "Retak di sambungan tembok", "detail": "(lantai rooftop dalam)", "pic": "Harian ARS / STR", "status": "Open", "mulai": "", "selesai": "", "ket": ""}, {"no": 40, "item": "Perlu penambahan penyangga pintu raisefloor yg menuju pintu Shaf", "detail": "", "pic": "GSD", "status": "Open", "mulai": "", "selesai": "", "ket": ""}, {"no": 41, "item": "Perapihan kabel", "detail": "(lampu dan sambungan2nya)", "pic": "Muh / Abad", "status": "Open", "mulai": "", "selesai": "", "ket": ""}, {"no": 42, "item": "Lt.2 dekat tangga sisi belakang", "detail": "(keramiknya belang)", "pic": "Harian ARS / STR", "status": "Open", "mulai": "", "selesai": "", "ket": "setelah kunjungan, butuh 9 dus"}, {"no": 43, "item": "Perbaikan backdrop lobby", "detail": "(ada yang tidak simetris kayunya)", "pic": "Arif INT", "status": "Closed", "mulai": "2026-11-05", "selesai": "2026-11-05", "ket": ""}, {"no": 44, "item": "Terdapat bekas longdrat", "detail": "di Lt. mezzanine (ada yg belum dirapihkan, masih terlihat bolong)", "pic": "By Other", "status": "Open", "mulai": "", "selesai": "", "ket": "Westindo, Fire Alarm"}, {"no": 45, "item": "Stopkontak mezzanine", "detail": "(ada yg belum dipasang kembali)", "pic": "Muh / Abad", "status": "Open", "mulai": "", "selesai": "", "ket": ""}, {"no": 46, "item": "Lampu TL", "detail": "(Lt. mezzanine ada yg miring)", "pic": "Muh / Abad", "status": "Open", "mulai": "", "selesai": "", "ket": ""}, {"no": 47, "item": "Klem kabel lampu mezzanine", "detail": "(ada yg belum dirapihkan)", "pic": "Muh / Abad", "status": "Open", "mulai": "", "selesai": "", "ket": ""}, {"no": 48, "item": "Posisi longdrat lampu mezzanine miring", "detail": "", "pic": "Muh / Abad", "status": "Open", "mulai": "", "selesai": "", "ket": ""}, {"no": 49, "item": "Posisi engsel meja koboi", "detail": "(pantri di mezzanine, harus di-stel kembali)", "pic": "Arif INT", "status": "Open", "mulai": "", "selesai": "", "ket": ""}, {"no": 50, "item": "Tempat cuci piring di coffee corner mezzanine", "detail": "(tidak ergonomis)", "pic": "Arif INT", "status": "Open", "mulai": "", "selesai": "", "ket": "Harus ganti tipe"}, {"no": 51, "item": "Perapihan tembok dekat musholla mezzanine", "detail": "(masih ada yg cuil)", "pic": "Harian ARS / STR", "status": "Open", "mulai": "", "selesai": "", "ket": ""}, {"no": 52, "item": "Lampu di luar depan NOC, dekat pintu", "detail": "(ada yg belum terpasang rapih)", "pic": "Muh / Abad", "status": "Open", "mulai": "", "selesai": "", "ket": ""}, {"no": 53, "item": "Lampu tidak rapat", "detail": "di atas tangga kayu ke mezzanine", "pic": "Muh / Abad", "status": "Open", "mulai": "", "selesai": "", "ket": ""}, {"no": 54, "item": "HPL meja coffee corner", "detail": "(yg sobek di bagian depan)", "pic": "Arif INT", "status": "Open", "mulai": "", "selesai": "", "ket": "Rizzal"}, {"no": 55, "item": "Pemindahan posisi CCTV", "detail": "di dekat meja coffee mezzanine", "pic": "By Other", "status": "Open", "mulai": "", "selesai": "", "ket": ""}, {"no": 56, "item": "Pemindahan CCTV", "detail": "di bagian dalam ruang NOC", "pic": "By Other", "status": "Open", "mulai": "", "selesai": "", "ket": ""}, {"no": 57, "item": "PVC plafon ruang istirahat (Lt. semi basement)", "detail": "(tidak rapat, dan list PVC-nya tidak ada)", "pic": "Sidiq", "status": "Open", "mulai": "", "selesai": "", "ket": ""}, {"no": 58, "item": "Kaca di ruang istirahat Lt. semi basement", "detail": "(kurang sealant)", "pic": "Sidiq", "status": "Open", "mulai": "", "selesai": "", "ket": "Rudi"}, {"no": 59, "item": "Penambahan sealant", "detail": "di pintu ruang istirahat Lt. semi basement", "pic": "Sidiq", "status": "Open", "mulai": "", "selesai": "", "ket": "Rudi"}, {"no": 60, "item": "Ada sisa pipa blm terpotong", "detail": "di ruang baterai-A & lantai lainnya", "pic": "Muh / Abad", "status": "Open", "mulai": "", "selesai": "", "ket": "Conduit, belum terpotong"}, {"no": 61, "item": "Tembok bolong (jalur kabel)", "detail": "di ruang baterai-A", "pic": "Harian ARS / STR", "status": "Open", "mulai": "", "selesai": "", "ket": "Conduit, belum terpotong"}, {"no": 62, "item": "Rembes pojok di ruang baterai-A", "detail": "", "pic": "Harian ARS / STR", "status": "Open", "mulai": "", "selesai": "", "ket": "Perlu waterproofing bagian dinding"}, {"no": 63, "item": "Lampu dekat tray cable di ruang baterai-A", "detail": "(tidak presisi)", "pic": "Muh / Abad", "status": "Open", "mulai": "", "selesai": "", "ket": "Aliva"}, {"no": 64, "item": "Kabel panel yg masuk ke dalam ruang baterai-A", "detail": "(belum dipasang tray)", "pic": "Muh / Abad", "status": "In Progress", "mulai": "2026-11-05", "selesai": "", "ket": ""}, {"no": 65, "item": "Perapihan saklar2", "detail": "di ruang LVMDP", "pic": "Muh / Abad", "status": "Open", "mulai": "", "selesai": "", "ket": ""}, {"no": 66, "item": "Lampu lepas dan mati", "detail": "di ruang LVMDP", "pic": "Muh / Abad", "status": "Open", "mulai": "", "selesai": "", "ket": ""}, {"no": 67, "item": "Pipa refrigerant belum terpasang", "detail": "di ruang baterai-B", "pic": "By Other", "status": "Open", "mulai": "", "selesai": "", "ket": ""}, {"no": 68, "item": "Casing lampu", "detail": "(ruang baterai-B, lepas)", "pic": "Muh / Abad", "status": "Open", "mulai": "", "selesai": "", "ket": ""}, {"no": 69, "item": "Lampu belakang", "detail": "(ruang baterai-B, mati)", "pic": "Muh / Abad", "status": "Open", "mulai": "", "selesai": "", "ket": ""}, {"no": 70, "item": "Perapihan lantai", "detail": "(ruang baterai-B)", "pic": "Harian ARS / STR", "status": "Closed", "mulai": "2026-11-05", "selesai": "2026-11-05", "ket": "Rudi"}, {"no": 71, "item": "Genangan air di depan pintu ruang PLN", "detail": "(harus dilakukan perbaikan leveling)", "pic": "Harian ARS / STR", "status": "Open", "mulai": "", "selesai": "", "ket": "Screed, minta ke remicon"}, {"no": 72, "item": "Genangan air di Ruang Baterai-A", "detail": "", "pic": "Harian ARS / STR", "status": "Open", "mulai": "", "selesai": "", "ket": "beli keramik"}];</script>
 <script>
 (function(){
 const $=s=>document.querySelector(s);
 const STATUSES=['Open','In Progress','Closed'];
 let items=[], db=null, readOnly=false, loaded=false, pendingRender=false, editId=null, delArmed=false;
-const F={q:'',st:'all',pic:'',pk:''};
-const MAXF=4;
+const F={q:'',st:'all',pic:'',pk:'',lt:'',ru:''};
+const MAXF=6, PAGE=50; let shown=PAGE, lastSig='', importing=false;
+const LT_ORDER=['Basement','Lantai 1','Lantai 2','Lantai 3','Lantai 4','Dak','Area Site'];
+const ltRank=l=>{const i=LT_ORDER.indexOf(l);return i<0?99:i};
+const lokasi=it=>[it.lantai,it.ruang||it.zona,it.kode?('#'+it.kode):''].filter(Boolean).join(' · ');
+const cnt=arr=>{let o=0;for(const i of arr)if(i.status!=='Closed')o++;return arr.length+' item · '+o+' outstanding'};
+function ruangOf(lt){const m=new Map();for(const it of items){if(lt&&(it.lantai||'')!==lt)continue;const r=it.ruang||'(Tanpa ruang)';if(!m.has(r))m.set(r,{ru:r,lt:it.lantai||'',first:it.no,t:0,o:0,p:0,c:0});const x=m.get(r);x.t++;if(it.status==='Open')x.o++;else if(it.status==='In Progress')x.p++;else x.c++;if(it.no<x.first)x.first=it.no}return [...m.values()].sort((a,b)=>ltRank(a.lt)-ltRank(b.lt)||a.first-b.first)}
 const setH=()=>{const r=document.documentElement.style;r.setProperty('--hdrH',$('#hdr').offsetHeight+'px');r.setProperty('--barH',$('#listbar').offsetHeight+'px')};
 if(window.ResizeObserver){const ro=new ResizeObserver(setH);ro.observe($('#hdr'));ro.observe($('#listbar'))} else window.addEventListener('resize',setH);
 setH();
@@ -343,8 +401,10 @@ function filtered(){
     if(F.st==='out'&&!outstanding(it))return false;
     if(STATUSES.includes(F.st)&&it.status!==F.st)return false;
     if(F.pic){ if(F.pic==='__none'){if(pics(it.pic).length)return false} else if(!pics(it.pic).includes(F.pic))return false }
+    if(F.lt&&(it.lantai||'')!==F.lt)return false;
+    if(F.ru&&(it.ruang||'')!==F.ru)return false;
     if(F.pk){if(F.pk==='__none'){if((it.picKarsa||'').trim())return false} else if((it.picKarsa||'').trim()!==F.pk)return false}
-    if(q&&!(it.item+' '+it.detail+' '+it.ket+' '+it.pic+' '+(it.picKarsa||'')+' '+it.no).toLowerCase().includes(q))return false;
+    if(q&&!([it.item,it.detail,it.ket,it.pic,it.picKarsa,it.no,it.lantai,it.zona,it.ruang,it.kode].join(' ')).toLowerCase().includes(q))return false;
     return true;
   });
 }
@@ -395,6 +455,47 @@ function renderRecap(){
   for(const k of pks) pf.append(new Option(k+' ('+pkc.get(k)+' outstanding)',k));
   pf.append(new Option('(Belum ada PIC Karsa) ('+pkNone+')','__none')); pf.value=pcur;
   const pl=$('#pkList'); pl.textContent=''; for(const k of pks){const o=document.createElement('option');o.value=k;pl.append(o)}
+  // per lantai
+  const lm=new Map();
+  for(const it of items){const k=it.lantai||'(Tanpa lantai)'; if(!lm.has(k))lm.set(k,{lt:k,t:0,o:0,p:0,c:0}); const r=lm.get(k); r.t++; if(it.status==='Open')r.o++; else if(it.status==='In Progress')r.p++; else r.c++}
+  const lts=[...lm.values()].sort((a,b)=>ltRank(a.lt)-ltRank(b.lt)||a.lt.localeCompare(b.lt));
+  const tl=$('#recapL'); tl.textContent='';
+  const mkRow=(label,r,selected,go,cls)=>{
+    const tr=document.createElement('tr'); if(selected)tr.className='sel'; if(cls)tr.classList.add(cls); tr.tabIndex=0;
+    const td0=document.createElement('td'); td0.textContent=label; tr.append(td0);
+    if(r){for(const v of [r.t,r.o,r.p,r.c]){const td=document.createElement('td');td.className='num';td.textContent=v;tr.append(td)}
+      const pct=r.t?Math.round(r.c/r.t*100):0; const tp=document.createElement('td'); tp.className='num';
+      const pw=document.createElement('div'); pw.className='prog'; const bar=document.createElement('div'); bar.className='bar'; const bi=document.createElement('i'); bi.style.width=pct+'%'; bar.append(bi);
+      const pt=document.createElement('b'); pt.textContent=pct+'%'; pw.append(bar,pt); tp.append(pw); tr.append(tp)}
+    else td0.colSpan=6;
+    tr.onclick=go; tr.onkeydown=e=>{if(e.key==='Enter')go()}; tl.append(tr);
+  };
+  if(F.lt){
+    $('#recapLTitle').textContent='Rekap per Ruang · '+F.lt; $('#recapLHead').textContent='Ruang';
+    $('#recapLNote').textContent='Klik ruang untuk menyaring daftar. Klik "Semua lantai" untuk kembali.';
+    mkRow('← Semua lantai',null,false,()=>{F.lt='';F.ru='';render()},'back');
+    for(const r of ruangOf(F.lt)) mkRow(r.ru,r,F.ru===r.ru,()=>{F.ru=F.ru===r.ru?'':r.ru;render();if(F.ru)toList()});
+  } else {
+    $('#recapLTitle').textContent='Rekap per Lantai'; $('#recapLHead').textContent='Lantai / Area';
+    $('#recapLNote').textContent='Klik baris lantai untuk melihat rekap per ruang dan menyaring daftar.';
+  }
+  for(const r of (F.lt?[]:lts)){
+    const tr=document.createElement('tr'); if(F.lt===r.lt)tr.className='sel'; tr.tabIndex=0;
+    const td0=document.createElement('td'); td0.textContent=r.lt; tr.append(td0);
+    for(const v of [r.t,r.o,r.p,r.c]){const td=document.createElement('td');td.className='num';td.textContent=v;tr.append(td)}
+    const pct=r.t?Math.round(r.c/r.t*100):0; const tp=document.createElement('td'); tp.className='num';
+    const pw=document.createElement('div'); pw.className='prog'; const bar=document.createElement('div'); bar.className='bar'; const bi=document.createElement('i'); bi.style.width=pct+'%'; bar.append(bi);
+    const pt=document.createElement('b'); pt.textContent=pct+'%'; pw.append(bar,pt); tp.append(pw); tr.append(tp);
+    const go=()=>{F.lt=F.lt===r.lt?'':r.lt;F.ru='';render()};
+    tr.onclick=go; tr.onkeydown=e=>{if(e.key==='Enter')go()}; tl.append(tr);
+  }
+  if(!lts.length)tl.innerHTML='<tr><td colspan="6" class="empty">Belum ada item.</td></tr>';
+  const lf=$('#ltF'); lf.textContent=''; lf.append(new Option('Semua lantai',''));
+  for(const r of lts) lf.append(new Option(r.lt+' ('+(r.o+r.p)+')',r.lt)); lf.value=F.lt;
+  const rf=$('#ruF'); rf.textContent=''; rf.append(new Option(F.lt?'Semua ruang':'Semua ruang (pilih lantai)',''));
+  for(const r of ruangOf(F.lt)) rf.append(new Option((F.lt?'':r.lt+' · ')+r.ru+' ('+(r.o+r.p)+')',r.ru)); rf.value=F.ru;
+  const rl=$('#ruList'); rl.textContent=''; for(const r of ruangOf('')){const o=document.createElement('option');o.value=r.ru;rl.append(o)}
+  const ll=$('#ltList'); ll.textContent=''; for(const k of new Set([...LT_ORDER,...lts.map(r=>r.lt)])){const o=document.createElement('option');o.value=k;ll.append(o)}
 }
 function cell(el){const td=document.createElement('td');td.append(el);return td}
 function renderRows(){
@@ -403,9 +504,27 @@ function renderRows(){
   $('#countNote').textContent=loaded?('Menampilkan '+list.length+' dari '+items.length+' item'):'';
   if(!loaded){tb.innerHTML='<tr><td colspan="10" class="empty">Memuat daftar defect dari penyimpanan proyek…</td></tr>';return}
   if(!items.length&&!db){tb.innerHTML='<tr><td colspan="10" class="empty">Belum tersambung ke database.</td></tr>';return}
-  if(!items.length){tb.innerHTML='<tr><td colspan="10" class="empty">Database masih kosong.<br><br><button class="btn pri" id="seedBtn" type="button">Muat data defect terbaru (72 item)</button></td></tr>';$('#seedBtn').onclick=seed;return}
+  const pg=$('#pager'); pg.textContent='';
+  if(!items.length){tb.innerHTML='<tr><td colspan="10" class="empty">Database masih kosong.<br><br><button class="btn pri" id="emptyImp" type="button">Impor data dari file…</button></td></tr>';$('#emptyImp').onclick=openImport;return}
   if(!list.length){tb.innerHTML='<tr><td colspan="10" class="empty">Tidak ada item yang cocok dengan saringan ini.</td></tr>';return}
-  for(const it of list){
+  const sig=JSON.stringify(F); if(sig!==lastSig){lastSig=sig;shown=PAGE}
+  const vis=list.slice(0,shown);
+  if(list.length>vis.length){
+    const info=document.createElement('span'); info.textContent='Menampilkan '+vis.length+' dari '+list.length+' item';
+    const more=document.createElement('button'); more.type='button'; more.className='btn'; more.textContent='Tampilkan '+Math.min(PAGE,list.length-vis.length)+' lagi'; more.onclick=()=>{shown+=PAGE;renderRows()};
+    const all=document.createElement('button'); all.type='button'; all.className='btn'; all.textContent='Tampilkan semua'; all.onclick=()=>{shown=list.length;renderRows()};
+    pg.append(info,more,all);
+  }
+  const byLt=new Map(), byRu=new Map();
+  for(const i of list){const a=i.lantai||'',r=a+'|'+(i.ruang||'');(byLt.get(a)||byLt.set(a,[]).get(a)).push(i);(byRu.get(r)||byRu.set(r,[]).get(r)).push(i)}
+  let gL=null,gR=null;
+  const grp=(cls,label,arr,onclick)=>{const tr=document.createElement('tr');tr.className='grp '+cls;const td=document.createElement('td');td.colSpan=10;
+    const b=document.createElement('button');b.type='button';b.textContent=label;b.title='Saring ke '+label;b.onclick=onclick;
+    const c=document.createElement('span');c.className='gc';c.textContent=cnt(arr);td.append(b,c);tr.append(td);tb.append(tr)};
+  for(const it of vis){
+    const a=it.lantai||'', r=it.ruang||'';
+    if(a!==gL){gL=a;gR=null;grp('l',a||'(Tanpa lantai)',byLt.get(a),()=>{F.lt=a;F.ru='';render();toList()})}
+    if(r!==gR){gR=r;grp('r',r||'(Tanpa ruang)',byRu.get(a+'|'+r),()=>{F.lt=a;F.ru=r;render();toList()})}
     const tr=document.createElement('tr'); const k=kind(it.pic);
     tr.className=[k,it.status==='Closed'?'closed':''].join(' ');
     const no=document.createElement('td');no.className='no';no.textContent=it.no;tr.append(no);
@@ -414,6 +533,7 @@ function renderRows(){
     const s=document.createElement('strong');s.textContent=it.item;b.append(s);
     if(it.detail){b.append(' ');const sp=document.createElement('span');sp.textContent=it.detail;b.append(sp)}
     if(k){const tg=document.createElement('span');tg.className='tag '+k;tg.textContent=k==='gsd'?'GSD':'By Other';b.append(tg)}
+    const lc=it.kode?('#'+it.kode):''; if(lc){const l=document.createElement('span');l.className='loc';l.textContent=lc;b.append(l)}
     b.onclick=()=>openModal(it.id); ur.append(b); tr.append(ur);
     const pic=document.createElement('input');pic.className='pic';pic.value=it.pic||'';pic.setAttribute('list','picList');pic.placeholder='Isi PIC';pic.id='pic-'+it.id;pic.setAttribute('aria-label','PIC item '+it.no);
     pic.onchange=()=>save(it.id,{pic:pic.value.trim()}); tr.append(cell(pic));
@@ -537,6 +657,7 @@ function statusPatch(it,v){
 function render(){
   const a=document.activeElement;
   if(a&&$('#rows').contains(a)&&a.matches('input')){pendingRender=true;return}
+  if(importing){pendingRender=true;return}
   pendingRender=false; renderStats(); renderRecap(); renderRows(); if(typeof updFCount==='function')updFCount();
 }
 document.addEventListener('focusout',()=>setTimeout(()=>{if(pendingRender)render()},0));
@@ -554,7 +675,7 @@ function openModal(id){
   editId=id||null; delArmed=false;
   const it=id?items.find(i=>i.id===id):{item:'',detail:'',pic:'',picKarsa:'',status:'Open',mulai:'',selesai:'',ket:''};
   $('#mTitle').textContent=id?('Edit item No. '+it.no):'Tambah item';
-  $('#fItem').value=it.item;$('#fDetail').value=it.detail||'';$('#fPic').value=it.pic||'';$('#fPk').value=it.picKarsa||'';$('#fStatus').value=it.status||'Open';
+  $('#fItem').value=it.item;$('#fDetail').value=it.detail||'';$('#fLantai').value=it.lantai||F.lt||'';$('#fRuang').value=it.ruang||(id?'':F.ru)||'';$('#fPic').value=it.pic||'';$('#fPk').value=it.picKarsa||'';$('#fStatus').value=it.status||'Open';
   $('#fMeta').textContent=it.diubahOleh?('Terakhir diubah oleh '+it.diubahOleh+', '+new Date(it.diubahPada).toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'})):'';$('#fMulai').value=it.mulai||'';$('#fSelesai').value=it.selesai||'';$('#fKet').value=it.ket||'';
   $('#delBtn').hidden=!id; $('#delBtn').textContent='Hapus item';
   $('#form').querySelectorAll('input,select,textarea,#saveBtn,#delBtn').forEach(e=>e.disabled=readOnly);
@@ -570,7 +691,7 @@ $('#form').addEventListener('submit',async e=>{
   if(status==='In Progress'&&!mulai)mulai=today();
   if(status==='Closed'){if(!selesai)selesai=today();if(!mulai)mulai=selesai}
   if(status!=='Closed')selesai=status==='Open'?'':selesai;
-  const body={item:$('#fItem').value.trim(),detail:$('#fDetail').value.trim(),pic:$('#fPic').value.trim(),picKarsa:$('#fPk').value.trim(),status,mulai,selesai,ket:$('#fKet').value.trim()};
+  const body={item:$('#fItem').value.trim(),detail:$('#fDetail').value.trim(),lantai:$('#fLantai').value.trim(),ruang:$('#fRuang').value.trim(),pic:$('#fPic').value.trim(),picKarsa:$('#fPk').value.trim(),status,mulai,selesai,ket:$('#fKet').value.trim()};
   if(!body.item){$('#fItem').focus();return}
   $('#saveBtn').disabled=true;
   try{
@@ -596,13 +717,15 @@ const toList=()=>{const y=$('#listbar').parentElement.getBoundingClientRect().to
 document.querySelectorAll('[data-f]').forEach(b=>b.addEventListener('click',()=>{F.st=b.dataset.f;render();if(b.closest('#stats'))toList()}));
 $('#picF').onchange=e=>{F.pic=e.target.value;render()};
 $('#pkF').onchange=e=>{F.pk=e.target.value;render()};
+$('#ltF').onchange=e=>{F.lt=e.target.value;F.ru='';render()};
+$('#ruF').onchange=e=>{const v=e.target.value;if(v&&!F.lt){const it=items.find(i=>(i.ruang||'')===v);if(it)F.lt=it.lantai||''}F.ru=v;render()};
 
 // PDF
 const LOGO=document.querySelector('.logo img').src;
 const RGB={navy:[16,48,61],teal:[24,169,184],red:[194,55,43],orange:[217,130,43],grid:[154,169,179],head:[230,238,241],grey:[85,85,85],open:[176,58,46],prog:[165,102,10],done:[31,138,91]};
 function filterLabel(){
   const p=[]; p.push({all:'Semua status',out:'Outstanding'}[F.st]||F.st);
-  if(F.pic)p.push('PIC: '+picLabel(F.pic)); if(F.pk)p.push('PIC Karsa: '+(F.pk==='__none'?'(belum ada)':F.pk)); if(F.q)p.push('Cari: "'+F.q+'"'); return p.join(' · ');
+  if(F.lt)p.push('Lantai: '+F.lt); if(F.ru)p.push('Ruang: '+F.ru); if(F.pic)p.push('PIC: '+picLabel(F.pic)); if(F.pk)p.push('PIC Karsa: '+(F.pk==='__none'?'(belum ada)':F.pk)); if(F.q)p.push('Cari: "'+F.q+'"'); return p.join(' · ');
 }
 async function exportPdf(){
   if(!window.jspdf){toast('Pustaka PDF belum termuat, coba lagi sebentar.');return}
@@ -638,21 +761,27 @@ async function exportPdf(){
   doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(...RGB.grey);
   doc.setFillColor(...RGB.red);doc.rect(M,doc.lastAutoTable.finalY+9,4,3,'F');doc.text('Raised Floor, lingkup GSD (bukan lingkup PT. Karsa Prabala)',M+6,doc.lastAutoTable.finalY+11.4);
   doc.setFillColor(...RGB.orange);doc.rect(M+95,doc.lastAutoTable.finalY+9,4,3,'F');doc.text('By Other, dikerjakan pihak lain',M+101,doc.lastAutoTable.finalY+11.4);
+  const pdfRows=[], meta=[]; {let gL=null,gR=null;
+    const byLt=new Map(),byRu=new Map(); for(const i of list){const a=i.lantai||'',r=a+'|'+(i.ruang||'');(byLt.get(a)||byLt.set(a,[]).get(a)).push(i);(byRu.get(r)||byRu.set(r,[]).get(r)).push(i)}
+    for(const i of list){const a=i.lantai||'',r=i.ruang||'';
+      if(a!==gL){gL=a;gR=null;pdfRows.push([{content:(a||'(Tanpa lantai)').toUpperCase()+'   ('+cnt(byLt.get(a))+')',colSpan:10,styles:{fillColor:RGB.navy,textColor:255,fontStyle:'bold',fontSize:9}}]);meta.push(null)}
+      if(r!==gR){gR=r;pdfRows.push([{content:(r||'(Tanpa ruang)')+'   ('+cnt(byRu.get(a+'|'+r))+')',colSpan:10,styles:{fillColor:[226,240,242],textColor:RGB.navy,fontStyle:'bold',fontSize:8.2}}]);meta.push(null)}
+      pdfRows.push([i.no,i.item+(i.detail?' '+i.detail:'')+(i.kode?'\n#'+i.kode:''),i.pic||'',i.picKarsa||'',i.status,fmt(i.mulai),fmt(i.selesai),'','',i.ket||'']);meta.push(i)}}
   doc.autoTable({startY:doc.lastAutoTable.finalY+14,margin:{left:M,right:M,bottom:12},theme:'grid',rowPageBreak:'avoid',
     head:[['No','Uraian Defect','PIC','PIC Karsa','Status','Mulai','Selesai','Dok. Open','Dok. Closed','Keterangan']],
-    body:list.map(i=>[i.no,i.item+(i.detail?' '+i.detail:''),i.pic||'',i.picKarsa||'',i.status,fmt(i.mulai),fmt(i.selesai),'','',i.ket||'']),
+    body:pdfRows,
     styles:{fontSize:7.6,cellPadding:1.6,lineColor:RGB.grid,lineWidth:0.2,textColor:20,valign:'middle'},
     headStyles:{fillColor:RGB.navy,textColor:255,halign:'center'},
     columnStyles:{0:{halign:'center',cellWidth:9},2:{cellWidth:26,fontStyle:'bold'},3:{cellWidth:21},4:{halign:'center',cellWidth:17,fontStyle:'bold'},5:{halign:'center',cellWidth:18},6:{halign:'center',cellWidth:18},7:{cellWidth:30},8:{cellWidth:30},9:{cellWidth:42}},
     didParseCell:d=>{
-      if(d.section!=='body')return; const it=list[d.row.index]; if(!it)return; const k=kind(it.pic);
+      if(d.section!=='body')return; const it=meta[d.row.index]; if(!it)return; const k=kind(it.pic);
       if((d.column.index===7||d.column.index===8)&&(it[d.column.index===7?'fotoOpen':'fotoClosed']||[]).length)d.cell.styles.minCellHeight=14.5;
       if(k){d.cell.styles.fillColor=k==='gsd'?RGB.red:RGB.orange;d.cell.styles.textColor=255;return}
       if(d.column.index===4)d.cell.styles.textColor=it.status==='Closed'?RGB.done:it.status==='In Progress'?RGB.prog:RGB.open;
     },
     didDrawCell:d=>{
       if(d.section!=='body'||(d.column.index!==7&&d.column.index!==8))return;
-      const R=list[d.row.index]||(d.row.raw&&byNo.get(d.row.raw[0])); if(!R)return; const arr=(R[d.column.index===7?'fotoOpen':'fotoClosed'])||[]; if(!arr.length)return;
+      const R=meta[d.row.index]||(d.row.raw&&typeof d.row.raw[0]==='number'&&byNo.get(d.row.raw[0])); if(!R)return; const arr=(R[d.column.index===7?'fotoOpen':'fotoClosed'])||[]; if(!arr.length)return;
       const S=11.5, gap=1.2; let x=d.cell.x+1.2; const y=d.cell.y+(d.cell.height-S)/2;
       arr.slice(0,2).forEach(f=>{const wh=dims.get(f.t)||[1,1];const r=Math.min(S/wh[0],S/wh[1]);const w=wh[0]*r,h=wh[1]*r;
         try{doc.addImage(f.t,'JPEG',x+(S-w)/2,y+(S-h)/2,w,h,f.id,'FAST')}catch{} x+=S+gap});
@@ -665,7 +794,7 @@ async function exportPdf(){
 $('#pdfBtn').onclick=exportPdf;
 const fT=$('#filterToggle');
 fT.onclick=()=>{const o=$('#listbar').classList.toggle('open');fT.setAttribute('aria-expanded',String(o));fT.firstChild.textContent=o?'Tutup ':'Filter '};
-function updFCount(){const n=(F.st!=='all')+(!!F.pic)+(!!F.pk);const b=$('#fCount');b.textContent=n;b.hidden=!n}
+function updFCount(){const n=(F.st!=='all')+(!!F.pic)+(!!F.pk)+(!!F.lt)+(!!F.ru);const b=$('#fCount');b.textContent=n;b.hidden=!n}
 const mqPhone=matchMedia('(max-width:700px)');
 const setPdfLabel=()=>{$('#pdfBtn').textContent=mqPhone.matches?'PDF':'Export PDF';$('#addBtn').textContent=mqPhone.matches?'+ Item':'+ Tambah item';$('#addBtn').setAttribute('aria-label','Tambah item')};
 setPdfLabel(); mqPhone.addEventListener?mqPhone.addEventListener('change',setPdfLabel):mqPhone.addListener(setPdfLabel);
@@ -673,13 +802,54 @@ setPdfLabel(); mqPhone.addEventListener?mqPhone.addEventListener('change',setPdf
 render();
 
 // data
-async function seed(){
-  if(!db||items.length)return; const b=$('#seedBtn'); if(b){b.disabled=true;b.textContent='Memuat…'}
-  try{const batch=db.batch(); const st=stamp();
-    for(const it of window.SEED_ITEMS) batch.set(db.collection('items').doc('d'+String(it.no).padStart(3,'0')),{...it,...st});
-    await batch.commit(); toast(window.SEED_ITEMS.length+' item dimuat.')}
-  catch(e){toast('Gagal memuat data awal.');if(b){b.disabled=false;b.textContent='Coba lagi'}}
+// ---------- import ----------
+let IMP=null;
+function openImport(){
+  if(!db){toast('Data belum tersambung ke Firebase.');return}
+  $('#impOld').textContent=items.length; $('#impProg').hidden=true; $('#impGo').disabled=!IMP; $('#imp').hidden=false;
 }
+$('#impBtn').onclick=openImport;
+$('#impCancel').onclick=()=>{if(!importing)$('#imp').hidden=true};
+$('#impFile').onchange=async()=>{
+  const f=$('#impFile').files[0]; const box=$('#impInfo'); IMP=null; $('#impGo').disabled=true; if(!f)return;
+  box.hidden=false; box.textContent='Membaca file ('+(f.size/1e6).toFixed(1)+' MB)…';
+  try{
+    const j=JSON.parse(await f.text());
+    if(!j||!j.meta||j.meta.format!=='defect-tracker-import'||!Array.isArray(j.items)||!Array.isArray(j.photos))throw new Error('format');
+    IMP=j; const c=j.items.filter(x=>x.data&&x.data.status==='Closed').length;
+    const lt=new Set(j.items.map(x=>x.data.lantai).filter(Boolean));
+    box.textContent=j.items.length+' item ('+c+' Closed, '+(j.items.length-c)+' Open) · '+j.photos.length+' foto · '+lt.size+' lantai/area. Sumber: '+(j.meta.sumber||'-');
+    $('#impGo').disabled=false;
+  }catch(e){box.textContent='File ini bukan file impor defect tracker. Pilih file .json yang benar.'}
+};
+$('#impGo').onclick=async()=>{
+  if(!IMP||!db||importing)return;
+  const replace=$('#impReplace').checked; const newIds=new Set(IMP.items.map(x=>x.id)); const newPh=new Set(IMP.photos.map(x=>x.id));
+  const old=items.slice(); const oldPh=old.flatMap(i=>[...(i.fotoOpen||[]),...(i.fotoClosed||[])].map(f=>f.id)).filter(id=>!newPh.has(id));
+  const delItems=replace?old.filter(i=>!newIds.has(i.id)).map(i=>i.id):[];
+  const delPh=replace?oldPh:[];
+  const st=stamp(); st.diubahOleh=(who.value.trim()||'Impor')+' (impor)';
+  const ops=[];
+  for(const p of IMP.photos)ops.push({t:'set',ref:db.doc('photos/'+p.id),data:p.data,sz:(p.data.data||'').length+300,lbl:'foto'});
+  for(const x of IMP.items)ops.push({t:'set',ref:db.doc('items/'+x.id),data:{...x.data,...st},sz:JSON.stringify(x.data).length+300,lbl:'item'});
+  for(const id of delPh)ops.push({t:'del',ref:db.doc('photos/'+id),sz:100,lbl:'hapus foto lama'});
+  for(const id of delItems)ops.push({t:'del',ref:db.doc('items/'+id),sz:100,lbl:'hapus item lama'});
+  importing=true; $('#impGo').disabled=true; $('#impCancel').disabled=true; $('#impFile').disabled=true; $('#impProg').hidden=false;
+  let done=0; const upd=l=>{$('#impBar').style.width=Math.round(done/ops.length*100)+'%';$('#impMsg').textContent='Menyimpan '+l+'… '+done+' / '+ops.length};
+  try{
+    let batch=db.batch(), n=0, bytes=0, lbl='';
+    for(const op of ops){
+      if(n&&(n>=400||bytes+op.sz>4500000)){upd(lbl);await batch.commit();done+=n;batch=db.batch();n=0;bytes=0}
+      op.t==='set'?batch.set(op.ref,op.data):batch.delete(op.ref); n++; bytes+=op.sz; lbl=op.lbl;
+    }
+    if(n){upd(lbl);await batch.commit();done+=n}
+    upd('selesai'); $('#impMsg').textContent='Selesai: '+IMP.items.length+' item dan '+IMP.photos.length+' foto tersimpan'+(replace?(', '+delItems.length+' item lama dihapus.'):'.');
+    toast('Impor selesai.'); photoCache.clear();
+  }catch(e){
+    $('#impMsg').textContent='Impor berhenti di '+done+' / '+ops.length+' ('+(e&&e.code||'error')+'). Klik "Mulai impor" lagi untuk melanjutkan; data yang sudah masuk tidak terduplikasi.';
+    $('#impGo').disabled=false;
+  }finally{importing=false;$('#impCancel').disabled=false;$('#impFile').disabled=false;render()}
+};
 function setupMsg(html){const el=$('#setup');el.innerHTML=html;el.hidden=false;$('#sync').textContent='Belum tersambung';loaded=true;render()}
 (async()=>{
   const cfg=window.FIREBASE_CONFIG;
