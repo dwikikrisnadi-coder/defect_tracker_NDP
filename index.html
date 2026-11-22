@@ -292,7 +292,7 @@ tr.grp td button{all:unset;cursor:pointer} tr.grp td button:focus-visible{outlin
     </div>
     <div class="legend">
       <span><i class="chip" style="background:var(--gsd)"></i>Raised Floor (bukan lingkup CAS)</span>
-      <span><i class="chip" style="background:var(--other)"></i>By Other, dikerjakan pihak lain</span>
+      <span><i class="chip" style="background:var(--other)"></i>MEP (bukan lingkup CAS)</span>
     </div>
     <div class="scroll lw">
       <table class="list">
@@ -381,7 +381,7 @@ const MAXF=6, PAGE=50; let shown=PAGE, lastSig='', importing=false;
 const LT_ORDER=['Basement','Lantai 1','Lantai 2','Lantai 3','Lantai 4','Dak','Area Site'];
 const ltRank=l=>{const i=LT_ORDER.indexOf(l);return i<0?99:i};
 const lokasi=it=>[it.lantai,it.ruang||it.zona,it.kode?('#'+it.kode):''].filter(Boolean).join(' · ');
-const isKarsa=it=>!kind(it.pic);  // PIC Karsa / kosong (atau bukan GSD / By Other) = pekerjaan Karsa
+const isKarsa=it=>!kind(it.pic);  // PIC Karsa / kosong (atau bukan Raised Floor / MEP) = pekerjaan CAS
 const karsaClosed=arr=>{let kt=0,kc=0;for(const i of arr)if(isKarsa(i)){kt++;if(i.status==='Closed')kc++}return {kt,kc,pct:kt?Math.round(kc/kt*100):0}};
 const cnt=arr=>{let o=0;for(const i of arr)if(i.status!=='Closed')o++;return arr.length+' item · '+o+' outstanding'};
 function ruangOf(lt){const m=new Map();for(const it of items){if(lt&&(it.lantai||'')!==lt)continue;const r=it.ruang||'(Tanpa ruang)';if(!m.has(r))m.set(r,{ru:r,lt:it.lantai||'',first:it.no,t:0,o:0,p:0,c:0});const x=m.get(r);x.t++;if(isKarsa(it)){x.kt=(x.kt||0)+1;if(it.status==='Closed')x.kc=(x.kc||0)+1}if(it.status==='Open')x.o++;else if(it.status==='In Progress')x.p++;else x.c++;if(it.no<x.first)x.first=it.no}return [...m.values()].sort((a,b)=>ltRank(a.lt)-ltRank(b.lt)||a.first-b.first)}
@@ -394,9 +394,9 @@ const stamp=()=>({diubahOleh:who.value.trim()||'Tanpa nama',diubahPada:new Date(
 
 const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 const fmt=iso=>{if(!iso)return '';const [y,m,d]=iso.split('-');return d+'/'+m+'/'+y};
-const kind=p=>{p=(p||'').toLowerCase();if(/\bgsd\b|raised\s*-?\s*floor/.test(p))return 'gsd';if(p.includes('by other'))return 'other';return ''};
-const DEF_PIC='CAS', RF_PIC='Raised Floor';
-const canonPic=s=>{s=(s||'').trim(); if(!s||/^(karsa|cas)$/i.test(s))return ''; if(/^gsd$/i.test(s))return RF_PIC; return s};  // kosong / Karsa / CAS = PIC default (CAS); GSD = Raised Floor
+const kind=p=>{p=(p||'').toLowerCase();if(/\bgsd\b|raised\s*-?\s*floor/.test(p))return 'gsd';if(/by\s*other|\bmep\b/.test(p))return 'other';return ''};
+const DEF_PIC='CAS', RF_PIC='Raised Floor', MEP_PIC='MEP';
+const canonPic=s=>{s=(s||'').trim(); if(!s||/^(karsa|cas)$/i.test(s))return ''; if(/^gsd$/i.test(s))return RF_PIC; if(/^(by\s*other|mep)$/i.test(s))return MEP_PIC; return s};  // kosong / Karsa / CAS = PIC default (CAS); GSD = Raised Floor
 const pics=p=>(p||'').split(/\s*&\s*/).map(canonPic).filter(Boolean);
 const picShow=p=>{const a=pics(p);return a.length?a.join(' & '):DEF_PIC};
 const picSave=v=>pics(v).join(' & ');
@@ -456,8 +456,8 @@ function renderRecap(){
   for(const r of data) sel.append(new Option(picLabel(r.pic)+' ('+(r.o+r.p)+' outstanding)',r.pic));
   sel.value=cur;
   const dl=$('#picList'); dl.textContent='';
-  for(const v of [DEF_PIC,RF_PIC,'By Other']){const o=document.createElement('option');o.value=v;dl.append(o)}
-  for(const r of data) if(r.pic!=='__none'&&![RF_PIC,'By Other'].includes(r.pic)){const o=document.createElement('option');o.value=r.pic;dl.append(o)}
+  for(const v of [DEF_PIC,RF_PIC,MEP_PIC]){const o=document.createElement('option');o.value=v;dl.append(o)}
+  for(const r of data) if(r.pic!=='__none'&&![RF_PIC,MEP_PIC].includes(r.pic)){const o=document.createElement('option');o.value=r.pic;dl.append(o)}
   // per lantai
   const lm=new Map();
   for(const it of items){const k=it.lantai||'(Tanpa lantai)'; if(!lm.has(k))lm.set(k,{lt:k,t:0,o:0,p:0,c:0,kt:0,kc:0}); const r=lm.get(k); r.t++; if(it.status==='Open')r.o++; else if(it.status==='In Progress')r.p++; else r.c++; if(isKarsa(it)){r.kt++; if(it.status==='Closed')r.kc++}}
@@ -535,7 +535,7 @@ function renderRows(){
     const b=document.createElement('button');b.type='button';b.title='Edit item';
     const s=document.createElement('strong');s.textContent=it.item;b.append(s);
     if(it.detail){b.append(' ');const sp=document.createElement('span');sp.textContent=it.detail;b.append(sp)}
-    if(k){const tg=document.createElement('span');tg.className='tag '+k;tg.textContent=k==='gsd'?RF_PIC:'By Other';b.append(tg)}
+    if(k){const tg=document.createElement('span');tg.className='tag '+k;tg.textContent=k==='gsd'?RF_PIC:MEP_PIC;b.append(tg)}
     const lc=it.kode?('#'+it.kode):''; if(lc){const l=document.createElement('span');l.className='loc';l.textContent=lc;b.append(l)}
     b.onclick=()=>openModal(it.id); ur.append(b); tr.append(ur);
     const pic=document.createElement('input');pic.className='pic';pic.value=picShow(it.pic);pic.setAttribute('list','picList');pic.placeholder=DEF_PIC;pic.id='pic-'+it.id;pic.setAttribute('aria-label','PIC item '+it.no);
@@ -754,7 +754,7 @@ async function exportPdf(){
           ['Saringan',filterLabel(),'Jumlah item',String(t)],
           ['Outstanding',(t-c)+' item (Open '+(t-c-p)+', In Progress '+p+')','Closed (CAS)',(K=>K.kc+' item from '+K.kt+' item ('+K.pct+'%)')(karsaClosed(list))]],
     columnStyles:{0:{fontStyle:'bold',fillColor:RGB.head,cellWidth:26},2:{fontStyle:'bold',fillColor:RGB.head,cellWidth:30}}});
-  doc.setFont('helvetica','italic');doc.setFontSize(7);doc.setTextColor(...RGB.grey);doc.text('Closed (CAS): dihitung dari item dengan PIC CAS saja; item Raised Floor dan By Other tidak dihitung.',M,doc.lastAutoTable.finalY+4);doc.setFont('helvetica','normal');
+  doc.setFont('helvetica','italic');doc.setFontSize(7);doc.setTextColor(...RGB.grey);doc.text('Closed (CAS): dihitung dari item dengan PIC CAS saja; item Raised Floor dan MEP tidak dihitung.',M,doc.lastAutoTable.finalY+4);doc.setFont('helvetica','normal');
   // recap of the exported rows
   const m=new Map();
   for(const it of list){const ks=pics(it.pic);for(const k of (ks.length?ks:['__none'])){if(!m.has(k))m.set(k,{pic:k,t:0,o:0,p:0,c:0,n:[]});const r=m.get(k);r.t++;r.n.push(it.no);if(it.status==='Open')r.o++;else if(it.status==='In Progress')r.p++;else r.c++}}
@@ -770,7 +770,7 @@ async function exportPdf(){
   doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(...RGB.navy);doc.text('DAFTAR DEFECT',M,doc.lastAutoTable.finalY+7);
   doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(...RGB.grey);
   doc.setFillColor(...RGB.red);doc.rect(M,doc.lastAutoTable.finalY+9,4,3,'F');doc.text('Raised Floor (bukan lingkup CAS)',M+6,doc.lastAutoTable.finalY+11.4);
-  doc.setFillColor(...RGB.orange);doc.rect(M+95,doc.lastAutoTable.finalY+9,4,3,'F');doc.text('By Other, dikerjakan pihak lain',M+101,doc.lastAutoTable.finalY+11.4);
+  doc.setFillColor(...RGB.orange);doc.rect(M+95,doc.lastAutoTable.finalY+9,4,3,'F');doc.text('MEP (bukan lingkup CAS)',M+101,doc.lastAutoTable.finalY+11.4);
   const pdfRows=[], meta=[]; {let gL=null,gR=null;
     const byLt=new Map(),byRu=new Map(); for(const i of list){const a=i.lantai||'',r=a+'|'+(i.ruang||'');(byLt.get(a)||byLt.set(a,[]).get(a)).push(i);(byRu.get(r)||byRu.set(r,[]).get(r)).push(i)}
     for(const i of list){const a=i.lantai||'',r=i.ruang||'';
